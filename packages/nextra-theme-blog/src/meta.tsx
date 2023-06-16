@@ -1,8 +1,8 @@
-import type { ReactElement } from 'react'
 import Link from 'next/link'
+import type { ReactElement } from 'react'
+import { useBlogContext } from './blog-context'
 import ThemeSwitch from './theme-switch'
 import { split } from './utils/get-tags'
-import { useBlogContext } from './blog-context'
 import { getParent } from './utils/parent'
 
 export default function Meta(): ReactElement {
@@ -36,7 +36,7 @@ export default function Meta(): ReactElement {
   ))
 
   const readingTime = opts.readingTime?.text
-
+  const dateObj = date ? new Date(date) : null
   return (
     <div
       className={
@@ -48,9 +48,9 @@ export default function Meta(): ReactElement {
         <div className="nx-not-prose nx-flex nx-flex-wrap nx-items-center nx-gap-1">
           {author}
           {author && date && ','}
-          {date && (
-            <time dateTime={new Date(date).toISOString()}>
-              {new Date(date).toDateString()}
+          {dateObj && (
+            <time dateTime={dateObj.toISOString()}>
+              {config.dateFormatter?.(dateObj) || dateObj.toDateString()}
             </time>
           )}
           {(author || date) && (readingTime || tags.length > 0) && (
@@ -64,7 +64,7 @@ export default function Meta(): ReactElement {
           </div>
         )}
       </div>
-      <div className="nx-flex nx-items-center nx-gap-3">
+      <div className="nx-flex nx-items-center nx-gap-3 print:nx-hidden">
         {back && (
           <Link href={back} passHref legacyBehavior>
             <a>Back</a>

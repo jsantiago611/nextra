@@ -1,11 +1,12 @@
-import type { ReactNode, ReactElement, ComponentProps } from 'react'
-import { useEffect, useRef, useState, cloneElement, Children } from 'react'
-import type { Components } from 'nextra/mdx'
-import { useSetActiveAnchor, DetailsProvider, useDetails } from './contexts'
-import { Collapse, Anchor } from './components'
-import type { DocsThemeConfig } from './constants'
 import cn from 'clsx'
 import { Code, Pre, Table, Td, Th, Tr } from 'nextra/components'
+import type { Components } from 'nextra/mdx'
+import type { ComponentProps, ReactElement, ReactNode } from 'react'
+import { Children, cloneElement, useEffect, useRef, useState } from 'react'
+import { Anchor, Collapse } from './components'
+import type { AnchorProps } from './components/anchor'
+import type { DocsThemeConfig } from './constants'
+import { DetailsProvider, useDetails, useSetActiveAnchor } from './contexts'
 import { useIntersectionObserver, useSlugs } from './contexts/active-anchor'
 
 // Anchor links
@@ -137,7 +138,7 @@ const Summary = (props: ComponentProps<'summary'>): ReactElement => {
   return (
     <summary
       className={cn(
-        'nx-cursor-pointer nx-list-none nx-p-1 nx-transition-colors hover:nx-bg-gray-100 dark:hover:nx-bg-neutral-800',
+        'nx-flex nx-items-center nx-cursor-pointer nx-list-none nx-p-1 nx-transition-colors hover:nx-bg-gray-100 dark:hover:nx-bg-neutral-800',
         "before:nx-mr-1 before:nx-inline-block before:nx-transition-transform before:nx-content-[''] dark:before:nx-invert",
         'rtl:before:nx-rotate-180 [[data-expanded]>&]:before:nx-rotate-90'
       )}
@@ -150,8 +151,22 @@ const Summary = (props: ComponentProps<'summary'>): ReactElement => {
   )
 }
 
+const EXTERNAL_HREF_REGEX = /https?:\/\//
+
+export const Link = ({ href = '', className, ...props }: AnchorProps) => (
+  <Anchor
+    href={href}
+    newWindow={EXTERNAL_HREF_REGEX.test(href)}
+    className={cn(
+      'nx-text-primary-600 nx-underline nx-decoration-from-font [text-underline-position:from-font]',
+      className
+    )}
+    {...props}
+  />
+)
+
 const A = ({ href = '', ...props }) => (
-  <Anchor href={href} newWindow={href.startsWith('https://')} {...props} />
+  <Anchor href={href} newWindow={EXTERNAL_HREF_REGEX.test(href)} {...props} />
 )
 
 export const getComponents = ({
@@ -201,12 +216,7 @@ export const getComponents = ({
       />
     ),
     hr: props => <hr className="nx-my-8 dark:nx-border-gray-900" {...props} />,
-    a: props => (
-      <A
-        {...props}
-        className="nx-text-primary-600 nx-underline nx-decoration-from-font [text-underline-position:from-font]"
-      />
-    ),
+    a: Link,
     table: props => (
       <Table
         className="nextra-scrollbar nx-mt-6 nx-p-0 first:nx-mt-0"

@@ -1,6 +1,6 @@
 import path from 'node:path'
-import title from 'title'
 import slash from 'slash'
+import title from 'title'
 import { LOCALE_REGEX } from './constants'
 import type { Folder, MdxFile, Meta } from './types'
 
@@ -99,4 +99,8 @@ export function hashFnv32a(str: string, seed = 0x811c9dc5): string {
 
   // Convert to 8 digit hex string
   return ('0000000' + (hval >>> 0).toString(16)).substring(-8)
+}
+
+export function getDefault<T>(module: T & { default?: T }): T {
+  return module.default || module
 }

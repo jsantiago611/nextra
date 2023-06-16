@@ -1,17 +1,18 @@
 /* eslint sort-keys: error */
-import type { FC, ReactNode } from 'react';
-import { isValidElement } from 'react'
-import { useRouter } from 'next/router'
-import { Anchor, Flexsearch, Footer, Navbar, TOC } from './components'
-import { DiscordIcon, GitHubIcon } from 'nextra/icons'
-import { MatchSorterSearch } from './components/match-sorter-search'
-import { useConfig } from './contexts'
-import type { Item } from './utils';
-import { useGitEditUrl, getGitIssueUrl } from './utils'
-import { z } from 'zod'
-import type { NavBarProps } from './components/navbar'
-import type { TOCProps } from './components/toc'
 import type { NextSeoProps } from 'next-seo'
+import { useRouter } from 'next/router'
+import { DiscordIcon, GitHubIcon } from 'nextra/icons'
+import type { Item } from 'nextra/normalize-pages'
+import type { FC, ReactNode } from 'react'
+import { isValidElement } from 'react'
+import { z } from 'zod'
+import { Anchor, Flexsearch, Footer, Navbar, TOC } from './components'
+import { MatchSorterSearch } from './components/match-sorter-search'
+import type { NavBarProps } from './components/navbar'
+import { themeOptionsSchema, ThemeSwitch } from './components/theme-switch'
+import type { TOCProps } from './components/toc'
+import { useConfig } from './contexts'
+import { getGitIssueUrl, useGitEditUrl } from './utils'
 
 export const DEFAULT_LOCALE = 'en-US'
 
@@ -123,7 +124,7 @@ export const themeSchema = z.strictObject({
     >(...reactNode),
     emptyResult: z.custom<ReactNode | FC>(...reactNode),
     error: z.string().or(z.function().returns(z.string())),
-    loading: z.string().or(z.function().returns(z.string())),
+    loading: z.custom<ReactNode | FC>(...reactNode),
     // Can't be React component
     placeholder: z.string().or(z.function().returns(z.string()))
   }),
@@ -138,10 +139,19 @@ export const themeSchema = z.strictObject({
     >(...reactNode),
     toggleButton: z.boolean()
   }),
+  themeSwitch: z.strictObject({
+    component: z.custom<ReactNode | FC<{ lite?: boolean; className?: string }>>(
+      ...reactNode
+    ),
+    useOptions: themeOptionsSchema.or(z.function().returns(themeOptionsSchema))
+  }),
   toc: z.strictObject({
     component: z.custom<ReactNode | FC<TOCProps>>(...reactNode),
     extraContent: z.custom<ReactNode | FC>(...reactNode),
     float: z.boolean(),
+    headingComponent: z
+      .custom<FC<{ id: string; children: string }>>(...fc)
+      .optional(),
     title: z.custom<ReactNode | FC>(...reactNode)
   }),
   useNextSeoProps: z.custom<() => NextSeoProps | void>(isFunction)
@@ -154,6 +164,20 @@ const publicThemeSchema = themeSchema.deepPartial().extend({
 
 export type DocsThemeConfig = z.infer<typeof themeSchema>
 export type PartialDocsThemeConfig = z.infer<typeof publicThemeSchema>
+
+const LOADING_LOCALES: Record<string, string> = {
+  'en-US': 'Loading',
+  fr: 'Сhargement',
+  ru: 'Загрузка',
+  'zh-CN': '正在加载'
+}
+
+const PLACEHOLDER_LOCALES: Record<string, string> = {
+  'en-US': 'Search documentation',
+  fr: 'Rechercher documents',
+  ru: 'Поиск документации',
+  'zh-CN': '搜索文档'
+}
 
 export const DEFAULT_THEME: DocsThemeConfig = {
   banner: {
@@ -201,7 +225,7 @@ export const DEFAULT_THEME: DocsThemeConfig = {
     component: Footer,
     text: `MIT ${new Date().getFullYear()} © Nextra.`
   },
-  gitTimestamp: function useGitTimestamp({ timestamp }) {
+  gitTimestamp: function GitTimestamp({ timestamp }) {
     const { locale = DEFAULT_LOCALE } = useRouter()
     return (
       <>
@@ -278,18 +302,17 @@ export const DEFAULT_THEME: DocsThemeConfig = {
     ),
     error: 'Failed to load search index.',
     loading: function useLoading() {
-      const { locale } = useRouter()
-      if (locale === 'zh-CN') return '正在加载…'
-      if (locale === 'ru') return 'Загрузка…'
-      if (locale === 'fr') return 'Сhargement…'
-      return 'Loading…'
+      const { locale, defaultLocale = DEFAULT_LOCALE } = useRouter()
+      const text =
+        (locale && LOADING_LOCALES[locale]) || LOADING_LOCALES[defaultLocale]
+      return <>{text}…</>
     },
     placeholder: function usePlaceholder() {
-      const { locale } = useRouter()
-      if (locale === 'zh-CN') return '搜索文档…'
-      if (locale === 'ru') return 'Поиск документации…'
-      if (locale === 'fr') return 'Rechercher de la documentation…'
-      return 'Search documentation…'
+      const { locale, defaultLocale = DEFAULT_LOCALE } = useRouter()
+      const text =
+        (locale && PLACEHOLDER_LOCALES[locale]) ||
+        PLACEHOLDER_LOCALES[defaultLocale]
+      return `${text}…`
     }
   },
   serverSideError: {
@@ -300,6 +323,17 @@ export const DEFAULT_THEME: DocsThemeConfig = {
     defaultMenuCollapseLevel: 2,
     titleComponent: ({ title }) => <>{title}</>,
     toggleButton: false
+  },
+  themeSwitch: {
+    component: ThemeSwitch,
+    useOptions() {
+      const { locale } = useRouter()
+
+      if (locale === 'zh-CN') {
+        return { dark: '深色主题', light: '浅色主题', system: '系统默认' }
+      }
+      return { dark: 'Dark', light: 'Light', system: 'System' }
+    }
   },
   toc: {
     component: TOC,
@@ -321,78 +355,3 @@ export const DEEP_OBJECT_KEYS = Object.entries(DEFAULT_THEME)
     }
   })
   .filter(Boolean)
-
-const pageThemeSchema = z.strictObject({
-  breadcrumb: z.boolean(),
-  collapsed: z.boolean(),
-  footer: z.boolean(),
-  layout: z.enum(['default', 'full', 'raw']),
-  navbar: z.boolean(),
-  pagination: z.boolean(),
-  sidebar: z.boolean(),
-  timestamp: z.boolean(),
-  toc: z.boolean(),
-  typesetting: z.enum(['default', 'article'])
-})
-
-export type PageTheme = z.infer<typeof pageThemeSchema>
-
-export const DEFAULT_PAGE_THEME: PageTheme = {
-  breadcrumb: true,
-  collapsed: false,
-  footer: true,
-  layout: 'default',
-  navbar: true,
-  pagination: true,
-  sidebar: true,
-  timestamp: true,
-  toc: true,
-  typesetting: 'default'
-}
-
-/**
- * An option to control how an item should be displayed in the sidebar:
- * - `normal`: the default behavior, item will be displayed
- * - `hidden`: the item will not be displayed in the sidebar entirely
- * - `children`: if the item is a folder, itself will be hidden but all its children will still be processed
- */
-const displaySchema = z.enum(['normal', 'hidden', 'children'])
-const titleSchema = z.string()
-
-const linkItemSchema = z.strictObject({
-  href: z.string(),
-  newWindow: z.boolean(),
-  title: titleSchema
-})
-
-const menuItemSchema = z.strictObject({
-  display: displaySchema.optional(),
-  items: z.record(linkItemSchema.partial({ href: true, newWindow: true })),
-  title: titleSchema,
-  type: z.literal('menu')
-})
-
-const separatorItemSchema = z.strictObject({
-  title: titleSchema,
-  type: z.literal('separator')
-})
-
-const itemSchema = linkItemSchema
-  .extend({
-    display: displaySchema,
-    theme: pageThemeSchema,
-    title: titleSchema,
-    type: z.enum(['page', 'doc'])
-  })
-  .deepPartial()
-
-export type Display = z.infer<typeof displaySchema>
-export type IMenuItem = z.infer<typeof menuItemSchema>
-
-export const metaSchema = z
-  .string()
-  .or(menuItemSchema)
-  .or(separatorItemSchema)
-  .or(itemSchema)
-
-export const ERROR_ROUTES = new Set(['/404', '/500'])

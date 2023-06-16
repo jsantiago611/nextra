@@ -1,7 +1,7 @@
 /* eslint typescript-sort-keys/interface: error */
 import type { PageOpts } from 'nextra'
-import type { ReactNode } from 'react'
 import type { Components } from 'nextra/mdx'
+import type { ReactNode } from 'react'
 
 export interface NextraBlogTheme {
   comments?: ReactNode
@@ -12,6 +12,7 @@ export interface NextraBlogTheme {
     lang: string
   }
   darkMode?: boolean
+  dateFormatter?: (date: Date) => string
   footer?: ReactNode
   head?: ({
     meta,

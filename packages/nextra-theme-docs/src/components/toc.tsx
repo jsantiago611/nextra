@@ -1,17 +1,21 @@
-import type { ReactElement } from 'react'
-import { useEffect, useRef, useMemo } from 'react'
 import cn from 'clsx'
 import type { Heading } from 'nextra'
+import type { ReactElement } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import scrollIntoView from 'scroll-into-view-if-needed'
-
+import { useActiveAnchor, useConfig } from '../contexts'
 import { renderComponent } from '../utils'
-import { useConfig, useActiveAnchor } from '../contexts'
 import { Anchor } from './anchor'
 
 export type TOCProps = {
   headings: Heading[]
   filePath: string
 }
+
+const linkClassName = cn(
+  'nx-text-xs nx-font-medium nx-text-gray-500 hover:nx-text-gray-900 dark:nx-text-gray-400 dark:hover:nx-text-gray-100',
+  'contrast-more:nx-text-gray-800 contrast-more:dark:nx-text-gray-50'
+)
 
 export function TOC({ headings, filePath }: TOCProps): ReactElement {
   const activeAnchor = useActiveAnchor()
@@ -51,11 +55,6 @@ export function TOC({ headings, filePath }: TOCProps): ReactElement {
     }
   }, [activeSlug])
 
-  const linkClassName = cn(
-    'nx-text-xs nx-font-medium nx-text-gray-500 hover:nx-text-gray-900 dark:nx-text-gray-400 dark:hover:nx-text-gray-100',
-    'contrast-more:nx-text-gray-800 contrast-more:dark:nx-text-gray-50'
-  )
-
   return (
     <div
       ref={tocRef}
@@ -77,19 +76,22 @@ export function TOC({ headings, filePath }: TOCProps): ReactElement {
                   className={cn(
                     {
                       2: 'nx-font-semibold',
-                      3: 'ltr:nx-ml-4 rtl:nx-mr-4',
-                      4: 'ltr:nx-ml-8 rtl:nx-mr-8',
-                      5: 'ltr:nx-ml-12 rtl:nx-mr-12',
-                      6: 'ltr:nx-ml-16 rtl:nx-mr-16'
+                      3: 'ltr:nx-pl-4 rtl:nx-pr-4',
+                      4: 'ltr:nx-pl-8 rtl:nx-pr-8',
+                      5: 'ltr:nx-pl-12 rtl:nx-pr-12',
+                      6: 'ltr:nx-pl-16 rtl:nx-pr-16'
                     }[depth as Exclude<typeof depth, 1>],
                     'nx-inline-block',
                     activeAnchor[id]?.isActive
                       ? 'nx-text-primary-600 nx-subpixel-antialiased contrast-more:!nx-text-primary-600'
                       : 'nx-text-gray-500 hover:nx-text-gray-900 dark:nx-text-gray-400 dark:hover:nx-text-gray-300',
-                    'contrast-more:nx-text-gray-900 contrast-more:nx-underline contrast-more:dark:nx-text-gray-50'
+                    'contrast-more:nx-text-gray-900 contrast-more:nx-underline contrast-more:dark:nx-text-gray-50 nx-w-full nx-break-words'
                   )}
                 >
-                  {value}
+                  {config.toc.headingComponent?.({
+                    id,
+                    children: value
+                  }) ?? value}
                 </a>
               </li>
             ))}

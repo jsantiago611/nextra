@@ -37,6 +37,9 @@ exports[`Page Process > pageMap en-US 1`] = `
             "acknowledgement": {
               "title": "Acknowledgement",
             },
+            "changelog": {
+              "title": "Changelog",
+            },
             "contributors": {
               "href": "https://github.com/vercel/swr/graphs/contributors",
               "newWindow": true,
@@ -105,6 +108,7 @@ exports[`Page Process > pageMap en-US 1`] = `
               "type": "page",
             },
             "acknowledgement": "🧩 Acknowledgement",
+            "changelog": "Changelog",
             "team": "👥 Team",
           },
           "kind": "Meta",
@@ -121,6 +125,12 @@ exports[`Page Process > pageMap en-US 1`] = `
           "locale": "en-US",
           "name": "acknowledgement",
           "route": "/about/acknowledgement",
+        },
+        {
+          "kind": "MdxPage",
+          "locale": "en-US",
+          "name": "changelog",
+          "route": "/about/changelog",
         },
         {
           "kind": "MdxPage",
@@ -205,6 +215,7 @@ exports[`Page Process > pageMap en-US 1`] = `
             },
             "code-block-without-language": "Code Block without Language",
             "conditional-fetching": "Conditional Data Fetching",
+            "custom-header-ids": "Custom Header IDs",
             "data-fetching": {
               "title": "Data Fetching",
             },
@@ -435,6 +446,12 @@ exports[`Page Process > pageMap en-US 1`] = `
         {
           "kind": "MdxPage",
           "locale": "en-US",
+          "name": "custom-header-ids",
+          "route": "/docs/custom-header-ids",
+        },
+        {
+          "kind": "MdxPage",
+          "locale": "en-US",
           "name": "data-fetching",
           "route": "/docs/data-fetching",
         },
@@ -628,39 +645,6 @@ exports[`Page Process > pageMap en-US 1`] = `
       "route": "/",
     },
     {
-      "children": [
-        {
-          "data": {},
-          "kind": "Meta",
-        },
-        {
-          "children": [
-            {
-              "data": {},
-              "kind": "Meta",
-            },
-          ],
-          "kind": "Folder",
-          "name": "graphql-eslint",
-          "route": "/remote/graphql-eslint",
-        },
-        {
-          "children": [
-            {
-              "data": {},
-              "kind": "Meta",
-            },
-          ],
-          "kind": "Folder",
-          "name": "graphql-yoga",
-          "route": "/remote/graphql-yoga",
-        },
-      ],
-      "kind": "Folder",
-      "name": "remote",
-      "route": "/remote",
-    },
-    {
       "frontMatter": {
         "mdxOptions": {
           "format": "md",
@@ -715,6 +699,7 @@ exports[`Page Process > pageMap ru 1`] = `
               "type": "page",
             },
             "acknowledgement": "🧩 Acknowledgement",
+            "changelog": "Changelog",
             "team": "👥 Team",
           },
           "kind": "Meta",
@@ -731,6 +716,12 @@ exports[`Page Process > pageMap ru 1`] = `
           "locale": "en-US",
           "name": "acknowledgement",
           "route": "/about/acknowledgement",
+        },
+        {
+          "kind": "MdxPage",
+          "locale": "en-US",
+          "name": "changelog",
+          "route": "/about/changelog",
         },
         {
           "kind": "MdxPage",
@@ -1048,6 +1039,12 @@ exports[`Page Process > pageMap ru 1`] = `
         {
           "kind": "MdxPage",
           "locale": "en-US",
+          "name": "custom-header-ids",
+          "route": "/docs/custom-header-ids",
+        },
+        {
+          "kind": "MdxPage",
+          "locale": "en-US",
           "name": "raw-layout",
           "route": "/docs/raw-layout",
         },
@@ -1144,39 +1141,6 @@ exports[`Page Process > pageMap ru 1`] = `
       "locale": "ru",
       "name": "index",
       "route": "/",
-    },
-    {
-      "children": [
-        {
-          "children": [
-            {
-              "data": {},
-              "kind": "Meta",
-            },
-          ],
-          "kind": "Folder",
-          "name": "graphql-eslint",
-          "route": "/remote/graphql-eslint",
-        },
-        {
-          "children": [
-            {
-              "data": {},
-              "kind": "Meta",
-            },
-          ],
-          "kind": "Folder",
-          "name": "graphql-yoga",
-          "route": "/remote/graphql-yoga",
-        },
-        {
-          "data": {},
-          "kind": "Meta",
-        },
-      ],
-      "kind": "Folder",
-      "name": "remote",
-      "route": "/remote",
     },
     {
       "kind": "MdxPage",

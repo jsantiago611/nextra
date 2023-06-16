@@ -1,23 +1,15 @@
-import type {
-  ReactElement,
-  KeyboardEvent} from 'react';
-import {
-  Fragment,
-  useCallback,
-  useState,
-  useEffect,
-  useRef
-} from 'react'
-import cn from 'clsx'
 import { Transition } from '@headlessui/react'
-import { InformationCircleIcon, SpinnerIcon } from 'nextra/icons'
-import { useMounted } from 'nextra/hooks'
-import { Input } from './input'
-import { Anchor } from './anchor'
-import { renderComponent, renderString } from '../utils'
-import { useConfig, useMenu } from '../contexts'
+import cn from 'clsx'
 import { useRouter } from 'next/router'
+import { useMounted } from 'nextra/hooks'
+import { InformationCircleIcon, SpinnerIcon } from 'nextra/icons'
+import type { KeyboardEvent, ReactElement } from 'react'
+import { Fragment, useCallback, useEffect, useRef, useState } from 'react'
+import { useConfig, useMenu } from '../contexts'
 import type { SearchResult } from '../types'
+import { renderComponent, renderString } from '../utils'
+import { Anchor } from './anchor'
+import { Input } from './input'
 
 type SearchProps = {
   className?: string
@@ -49,6 +41,7 @@ export function Search({
   const { setMenu } = useMenu()
   const input = useRef<HTMLInputElement>(null)
   const ulRef = useRef<HTMLUListElement>(null)
+  const [focused, setFocused] = useState(false)
 
   useEffect(() => {
     setActive(0)
@@ -56,8 +49,15 @@ export function Search({
 
   useEffect(() => {
     const down = (e: globalThis.KeyboardEvent): void => {
-      const tagName = document.activeElement?.tagName.toLowerCase()
-      if (!input.current || !tagName || INPUTS.includes(tagName)) return
+      const activeElement = document.activeElement as HTMLElement
+      const tagName = activeElement?.tagName.toLowerCase()
+      if (
+        !input.current ||
+        !tagName ||
+        INPUTS.includes(tagName) ||
+        activeElement?.isContentEditable
+      )
+        return
       if (
         e.key === '/' ||
         (e.key === 'k' &&
@@ -169,7 +169,7 @@ export function Search({
           onChange('')
         }}
       >
-        {value
+        {value && focused
           ? 'ESC'
           : mounted &&
             (navigator.userAgent.includes('Macintosh') ? (
@@ -202,6 +202,10 @@ export function Search({
         }}
         onFocus={() => {
           onActive?.(true)
+          setFocused(true)
+        }}
+        onBlur={() => {
+          setFocused(false)
         }}
         type="search"
         placeholder={renderString(config.search.placeholder)}
@@ -242,7 +246,7 @@ export function Search({
           ) : loading ? (
             <span className="nx-flex nx-select-none nx-justify-center nx-gap-2 nx-p-8 nx-text-center nx-text-sm nx-text-gray-400">
               <SpinnerIcon className="nx-h-5 nx-w-5 nx-animate-spin" />
-              {renderString(config.search.loading)}
+              {renderComponent(config.search.loading)}
             </span>
           ) : results.length > 0 ? (
             results.map(({ route, prefix, children, id }, i) => (

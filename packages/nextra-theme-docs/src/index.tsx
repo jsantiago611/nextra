@@ -1,27 +1,26 @@
+import { useRouter } from 'next/router'
 import type { NextraThemeLayoutProps, PageOpts } from 'nextra'
-
 import type { ReactElement, ReactNode } from 'react'
 import { useMemo } from 'react'
-import { useRouter } from 'next/router'
 import 'focus-visible'
 import cn from 'clsx'
+import { useFSRoute, useMounted } from 'nextra/hooks'
 import { MDXProvider } from 'nextra/mdx'
-import { useMounted } from 'nextra/hooks'
-
 import './polyfill'
+import type { PageTheme } from 'nextra/normalize-pages'
+import { normalizePages } from 'nextra/normalize-pages'
 import {
+  Banner,
+  Breadcrumb,
   Head,
   NavLinks,
   Sidebar,
-  SkipNavContent,
-  Breadcrumb,
-  Banner
+  SkipNavContent
 } from './components'
-import { getComponents } from './mdx-components'
-import { ActiveAnchorProvider, ConfigProvider, useConfig } from './contexts'
-import type { PageTheme } from './constants'
 import { DEFAULT_LOCALE, PartialDocsThemeConfig } from './constants'
-import { useFSRoute, normalizePages, renderComponent } from './utils'
+import { ActiveAnchorProvider, ConfigProvider, useConfig } from './contexts'
+import { getComponents } from './mdx-components'
+import { renderComponent } from './utils'
 
 interface BodyProps {
   themeContext: PageTheme
@@ -32,8 +31,10 @@ interface BodyProps {
 }
 
 const classes = {
-  toc: cn('nextra-toc nx-order-last nx-hidden nx-w-64 nx-shrink-0 xl:nx-block'),
-  main: cn('nx-w-full nx-overflow-x-hidden nx-break-words')
+  toc: cn(
+    'nextra-toc nx-order-last nx-hidden nx-w-64 nx-shrink-0 xl:nx-block print:nx-hidden'
+  ),
+  main: cn('nx-w-full nx-break-words')
 }
 
 const Body = ({
@@ -252,15 +253,20 @@ export default function Layout({
 
 export { useConfig, PartialDocsThemeConfig as DocsThemeConfig }
 export { useMDXComponents } from 'nextra/mdx'
+export { Callout } from 'nextra/components'
 export { useTheme } from 'next-themes'
+export { Link } from './mdx-components'
 export {
   Bleed,
-  Callout,
   Collapse,
   NotFoundPage,
   ServerSideErrorPage,
+  Steps,
   Tabs,
   Tab,
+  Cards,
+  Card,
+  FileTree,
   Navbar,
   SkipNavContent,
   SkipNavLink,

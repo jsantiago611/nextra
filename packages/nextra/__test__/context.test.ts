@@ -1,12 +1,12 @@
-import { describe, it, expect, beforeAll } from 'vitest'
+import path from 'node:path'
+import { beforeAll, describe, expect, it } from 'vitest'
+import { CWD, NEXTRA_INTERNAL } from '../src/constants'
 import {
   getAllPages,
   getCurrentLevelPages,
   getPagesUnderRoute
 } from '../src/context'
 import { collectFiles } from '../src/plugin'
-import { CWD, NEXTRA_INTERNAL } from '../src/constants'
-import path from 'node:path'
 import type { NextraInternalGlobal } from '../src/types'
 
 describe('context', () => {
@@ -19,7 +19,7 @@ describe('context', () => {
       'swr-site',
       'pages'
     )
-    const { items } = await collectFiles(PAGES_DIR)
+    const { items } = await collectFiles({ dir: PAGES_DIR })
     // @ts-expect-error -- we don't care about missing properties
     const __nextra_internal__ = ((globalThis as NextraInternalGlobal)[
       NEXTRA_INTERNAL

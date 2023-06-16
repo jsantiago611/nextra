@@ -1,26 +1,25 @@
-import type { ReactElement } from 'react'
-import {
-  useState,
-  useEffect,
-  useMemo,
-  memo,
-  useRef,
-  createContext,
-  useContext
-} from 'react'
 import cn from 'clsx'
 import { useRouter } from 'next/router'
 import type { Heading } from 'nextra'
-import scrollIntoView from 'scroll-into-view-if-needed'
-
-import { useConfig, useMenu, useActiveAnchor } from '../contexts'
-import type { Item, MenuItem, PageItem } from '../utils'
-import { useFSRoute, renderComponent } from '../utils'
-import { LocaleSwitch } from './locale-switch'
-import { ThemeSwitch } from './theme-switch'
+import { useFSRoute } from 'nextra/hooks'
 import { ArrowRightIcon, ExpandIcon } from 'nextra/icons'
-import { Collapse } from './collapse'
+import type { Item, MenuItem, PageItem } from 'nextra/normalize-pages'
+import type { ReactElement } from 'react'
+import {
+  createContext,
+  memo,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState
+} from 'react'
+import scrollIntoView from 'scroll-into-view-if-needed'
+import { useActiveAnchor, useConfig, useMenu } from '../contexts'
+import { renderComponent } from '../utils'
 import { Anchor } from './anchor'
+import { Collapse } from './collapse'
+import { LocaleSwitch } from './locale-switch'
 
 const TreeState: Record<string, boolean> = Object.create(null)
 
@@ -46,12 +45,12 @@ const classes = {
   ),
   inactive: cn(
     'nx-text-gray-500 hover:nx-bg-gray-100 hover:nx-text-gray-900',
-    'dark:nx-text-neutral-500 dark:hover:nx-bg-primary-100/5 dark:hover:nx-text-gray-50',
+    'dark:nx-text-neutral-400 dark:hover:nx-bg-primary-100/5 dark:hover:nx-text-gray-50',
     'contrast-more:nx-text-gray-900 contrast-more:dark:nx-text-gray-50',
     'contrast-more:nx-border-transparent contrast-more:hover:nx-border-gray-900 contrast-more:dark:hover:nx-border-gray-50'
   ),
   active: cn(
-    'nx-bg-primary-50 nx-font-semibold nx-text-primary-600 dark:nx-bg-primary-500/10',
+    'nx-bg-primary-100 nx-font-semibold nx-text-primary-800 dark:nx-bg-primary-400/10 dark:nx-text-primary-600',
     'contrast-more:nx-border-primary-500 contrast-more:dark:nx-border-primary-500'
   ),
   list: cn('nx-flex nx-flex-col nx-gap-1'),
@@ -116,12 +115,17 @@ function FolderImpl({ item, anchors }: FolderProps): ReactElement {
     })
   }
 
+  const isLink = 'withIndexPage' in item && item.withIndexPage
+  // use button when link don't have href because it impacts on SEO
+  const ComponentToUse = isLink ? Anchor : 'button'
+
   return (
     <li className={cn({ open, active })}>
-      <Anchor
-        href={(item as Item).withIndexPage ? item.route : ''}
+      <ComponentToUse
+        href={isLink ? item.route : undefined}
         className={cn(
           'nx-items-center nx-justify-between nx-gap-2',
+          !isLink && 'nx-text-left nx-w-full',
           classes.link,
           active ? classes.active : classes.inactive
         )}
@@ -132,7 +136,7 @@ function FolderImpl({ item, anchors }: FolderProps): ReactElement {
           if (clickedToggleIcon) {
             e.preventDefault()
           }
-          if ((item as Item).withIndexPage) {
+          if (isLink) {
             // If it's focused, we toggle it. Otherwise, always open it.
             if (active || clickedToggleIcon) {
               TreeState[item.route] = !open
@@ -160,7 +164,7 @@ function FolderImpl({ item, anchors }: FolderProps): ReactElement {
             open && 'ltr:nx-rotate-90 rtl:nx-rotate-[-270deg]'
           )}
         />
-      </Anchor>
+      </ComponentToUse>
       <Collapse className="ltr:nx-pr-0 rtl:nx-pl-0 nx-pt-1" isOpen={open}>
         {Array.isArray(item.children) ? (
           <Menu
@@ -389,6 +393,7 @@ export function Sidebar({
           'nextra-sidebar-container nx-flex nx-flex-col',
           'md:nx-top-16 md:nx-shrink-0 motion-reduce:nx-transform-none',
           'nx-transform-gpu nx-transition-all nx-ease-in-out',
+          'print:nx-hidden',
           showSidebar ? 'md:nx-w-64' : 'md:nx-w-20',
           asPopover ? 'md:nx-hidden' : 'md:nx-sticky md:nx-self-start',
           menu
@@ -466,10 +471,15 @@ export function Sidebar({
               />
             )}
             {config.darkMode && (
-              <ThemeSwitch
-                lite={!showSidebar || hasI18n}
-                className={showSidebar && !hasI18n ? 'nx-grow' : ''}
-              />
+              <div
+                className={
+                  showSidebar && !hasI18n ? 'nx-grow nx-flex nx-flex-col' : ''
+                }
+              >
+                {renderComponent(config.themeSwitch.component, {
+                  lite: !showSidebar || hasI18n
+                })}
+              </div>
             )}
             {config.sidebar.toggleButton && (
               <button

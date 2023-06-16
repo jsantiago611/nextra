@@ -1,8 +1,8 @@
 /* eslint sort-keys: error */
 import { useRouter } from 'next/router'
-import type { ComponentProps, ReactElement } from 'react'
 import type { DocsThemeConfig } from 'nextra-theme-docs'
 import { useConfig } from 'nextra-theme-docs'
+import type { ComponentProps, ReactElement } from 'react'
 
 const SWRLogo = (props: ComponentProps<'svg'>): ReactElement => (
   <svg viewBox="0 0 291 69" fill="none" {...props}>
@@ -190,7 +190,15 @@ const config: DocsThemeConfig = {
       // eslint-disable-next-line @next/next/no-img-element -- ignore since url is external and dynamic
       <img alt="placeholder cat" src="https://placekitten.com/g/300/200" />
     ),
-    float: true
+    float: true,
+    headingComponent: function Heading({ id, children }) {
+      return (
+        <>
+          {children}
+          {id === 'installation' && ' 💿'}
+        </>
+      )
+    }
   },
   useNextSeoProps() {
     const { locale } = useRouter()

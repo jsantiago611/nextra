@@ -1,10 +1,67 @@
-import { defineConfig } from 'tsup'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-
+import fg from 'fast-glob'
+import slash from 'slash'
+import { defineConfig } from 'tsup'
 import tsconfig from './tsconfig.json'
 
-const { target } = tsconfig.compilerOptions
+const CLIENT_ENTRY = [
+  'src/{use-internals,mdx,setup-page,normalize-pages}.ts',
+  'src/{ssg,layout}.tsx',
+  'src/{components,hooks,icons}/*.{ts,tsx}'
+]
+
+const entries = fg.sync(CLIENT_ENTRY, { absolute: true })
+const entriesSet = new Set(entries)
+
+const sharedConfig = defineConfig({
+  // import.meta is available only from es2020
+  target: 'es2020',
+  format: 'esm',
+  dts: true,
+  splitting: false,
+  external: ['shiki', './__temp__', 'webpack'],
+  esbuildPlugins: [
+    // https://github.com/evanw/esbuild/issues/622#issuecomment-769462611
+    {
+      name: 'add-mjs',
+      setup(build) {
+        build.onResolve({ filter: /.*/ }, async args => {
+          if (
+            args.importer &&
+            args.path.startsWith('.') &&
+            !args.path.endsWith('.json')
+          ) {
+            let isDir: boolean
+            const importPath = slash(path.join(args.resolveDir, args.path))
+            try {
+              isDir = (await fs.stat(importPath)).isDirectory()
+            } catch {
+              isDir = false
+            }
+
+            const isClientImporter = entriesSet.has(slash(args.importer))
+
+            if (isClientImporter) {
+              const isClientImport = entries.some(entry =>
+                entry.startsWith(importPath)
+              )
+              if (isClientImport) {
+                return { path: args.path, external: true }
+              }
+            }
+
+            if (isDir) {
+              // it's a directory
+              return { path: args.path + '/index.mjs', external: true }
+            }
+            return { path: args.path + '.mjs', external: true }
+          }
+        })
+      }
+    }
+  ]
+})
 
 export default defineConfig([
   {
@@ -12,59 +69,27 @@ export default defineConfig([
     entry: ['src/index.js', 'src/__temp__.js', 'src/catch-all.ts'],
     format: 'cjs',
     dts: false,
-    target
+    target: tsconfig.compilerOptions.target as 'es2016'
   },
   {
     name: 'nextra-esm',
     entry: [
       'src/**/*.ts',
-      'src/**/*.tsx',
       '!src/**/*.d.ts',
-      '!src/catch-all.ts'
+      '!src/catch-all.ts',
+      ...CLIENT_ENTRY.map(filePath => `!${filePath}`)
     ],
-    format: 'esm',
-    dts: true,
-    bundle: true,
-    splitting: false,
-    external: ['shiki', './__temp__', 'webpack'],
-    esbuildPlugins: [
-      // https://github.com/evanw/esbuild/issues/622#issuecomment-769462611
-      {
-        name: 'add-mjs',
-        setup(build) {
-          build.onResolve({ filter: /.*/ }, async args => {
-            if (
-              args.importer &&
-              args.path.startsWith('.') &&
-              !args.path.endsWith('.json')
-            ) {
-              let isDir: boolean
-              try {
-                isDir = (
-                  await fs.stat(path.join(args.resolveDir, args.path))
-                ).isDirectory()
-              } catch {
-                isDir = false
-              }
-
-              if (isDir) {
-                // it's a directory
-                return { path: args.path + '/index.mjs', external: true }
-              }
-              return { path: args.path + '.mjs', external: true }
-            }
-          })
-        }
-      }
-    ],
-    // import.meta is available only from es2020
-    target: 'es2020'
+    ...sharedConfig
+  },
+  {
+    name: 'nextra-client',
+    entry: CLIENT_ENTRY,
+    outExtension: () => ({ js: '.js' }),
+    ...sharedConfig
   },
   {
     entry: ['src/types.ts'],
     name: 'nextra-types',
-    dts: {
-      only: true
-    }
+    dts: { only: true }
   }
 ])

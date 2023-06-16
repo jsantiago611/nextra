@@ -1,19 +1,27 @@
+import { useTheme } from 'next-themes'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import type { ReactNode } from 'react'
-import { useBlogContext } from './blog-context'
+import type { ReactElement, ReactNode } from 'react'
 import { BasicLayout } from './basic-layout'
+import { useBlogContext } from './blog-context'
 import { MDXTheme } from './mdx-theme'
 import Nav from './nav'
 import { collectPostsAndNavs } from './utils/collect'
 import getTags from './utils/get-tags'
 
-export const PostsLayout = ({ children }: { children: ReactNode }) => {
+export const PostsLayout = ({
+  children
+}: {
+  children: ReactNode
+}): ReactElement => {
   const { config, opts } = useBlogContext()
   const { posts } = collectPostsAndNavs({ config, opts })
   const router = useRouter()
   const { type } = opts.frontMatter
   const tagName = type === 'tag' ? router.query.tag : null
+  const { resolvedTheme } = useTheme()
+  const textColor =
+    resolvedTheme === 'dark' ? 'nx-text-gray-400' : 'nx-text-gray-600'
   const postList = posts.map(post => {
     if (tagName) {
       const tags = getTags(post)
@@ -25,7 +33,9 @@ export const PostsLayout = ({ children }: { children: ReactNode }) => {
     }
 
     const postTitle = post.frontMatter?.title || post.name
-    const date = post.frontMatter?.date && new Date(post.frontMatter.date)
+    const date: Date | null = post.frontMatter?.date
+      ? new Date(post.frontMatter.date)
+      : null
     const description = post.frontMatter?.description
 
     return (
@@ -36,7 +46,7 @@ export const PostsLayout = ({ children }: { children: ReactNode }) => {
           </Link>
         </h3>
         {description && (
-          <p className="nx-mb-2 nx-text-gray-400">
+          <p className={'nx-mb-2 ' + textColor}>
             {description}
             {config.readMore && (
               <Link href={post.route} passHref legacyBehavior>
@@ -46,7 +56,10 @@ export const PostsLayout = ({ children }: { children: ReactNode }) => {
           </p>
         )}
         {date && (
-          <time className="nx-text-sm nx-text-gray-300" dateTime={date.toISOString()}>
+          <time
+            className={'nx-text-sm  ' + textColor}
+            dateTime={date.toISOString()}
+          >
             {date.toDateString()}
           </time>
         )}

@@ -1,13 +1,12 @@
-import type { NextraThemeLayoutProps } from 'nextra'
-
-import type { ReactElement, ReactNode } from 'react'
 import { ThemeProvider } from 'next-themes'
-import type { LayoutProps } from './types'
-import { BlogProvider } from './blog-context'
+import type { NextraThemeLayoutProps } from 'nextra'
+import type { ReactElement, ReactNode } from 'react'
 import { ArticleLayout } from './article-layout'
-import { PostsLayout } from './posts-layout'
-import { PageLayout } from './page-layout'
+import { BlogProvider } from './blog-context'
 import { DEFAULT_THEME } from './constants'
+import { PageLayout } from './page-layout'
+import { PostsLayout } from './posts-layout'
+import type { LayoutProps } from './types'
 
 const layoutMap = {
   post: ArticleLayout,
@@ -42,10 +41,7 @@ export default function Layout({
   const extendedConfig = { ...DEFAULT_THEME, ...context.themeConfig }
 
   return (
-    <ThemeProvider
-      attribute="class"
-      forcedTheme={extendedConfig.darkMode ? undefined : 'light'}
-    >
+    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
       <BlogLayout config={extendedConfig} opts={context.pageOpts}>
         {children}
       </BlogLayout>

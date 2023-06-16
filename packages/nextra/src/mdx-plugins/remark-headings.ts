@@ -1,9 +1,10 @@
 import type { Processor } from '@mdx-js/mdx/lib/core'
-import { visit } from 'unist-util-visit'
-import type { Plugin } from 'unified'
-import type { Root, Parent } from 'mdast'
 import Slugger from 'github-slugger'
+import type { Parent, Root } from 'mdast'
+import type { Plugin } from 'unified'
+import { visit } from 'unist-util-visit'
 import type { PageOpts } from '../types'
+import type { HProperties } from './remark-custom-heading-id'
 
 export const getFlattenedValue = (node: Parent): string =>
   node.children
@@ -42,7 +43,8 @@ export const remarkHeadings: Plugin<[], Root> = function (this: Processor) {
           const heading = {
             depth: node.depth,
             value,
-            id: slugger.slug(value)
+            id:
+              (node.data?.hProperties as HProperties)?.id || slugger.slug(value)
           }
           data.headingMeta.headings.push(heading)
           if (hasJsxInH1) {

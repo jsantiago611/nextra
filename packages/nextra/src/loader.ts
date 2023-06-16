@@ -1,24 +1,36 @@
-import type { LoaderOptions, MdxPath, PageOpts } from './types'
-import type { LoaderContext } from 'webpack'
-
 import path from 'node:path'
+import fs from 'graceful-fs'
 import slash from 'slash'
-
-import { hashFnv32a, pageTitleFromFilename, parseFileName } from './utils'
+import type { LoaderContext } from 'webpack'
 import { compileMdx } from './compile'
+import {
+  CWD,
+  IS_PRODUCTION,
+  MARKDOWN_EXTENSION_REGEX,
+  OFFICIAL_THEMES
+} from './constants'
+import { existsSync, PAGES_DIR } from './file-system'
 import { resolvePageMap } from './page-map'
 import { collectFiles, collectMdx } from './plugin'
-import {
-  IS_PRODUCTION,
-  OFFICIAL_THEMES,
-  MARKDOWN_EXTENSION_REGEX,
-  CWD
-} from './constants'
-import { findPagesDirectory } from './file-system'
-
-const PAGES_DIR = findPagesDirectory()
+import type { LoaderOptions, MdxPath, PageOpts } from './types'
+import { hashFnv32a, pageTitleFromFilename, parseFileName } from './utils'
 
 const IS_WEB_CONTAINER = !!process.versions.webcontainer
+
+const APP_MDX_PATH = path.join(PAGES_DIR, '_app.mdx')
+
+const UNDERSCORE_APP_FILENAME: string =
+  fs
+    .readdirSync(PAGES_DIR)
+    .find(fileName => /^_app\.(js|jsx|ts|tsx|md)$/.test(fileName)) || ''
+
+const HAS_UNDERSCORE_APP_MDX_FILE = existsSync(APP_MDX_PATH)
+
+if (UNDERSCORE_APP_FILENAME) {
+  console.warn(
+    `[nextra] Found "${UNDERSCORE_APP_FILENAME}" file, refactor it to "_app.mdx" for better performance.`
+  )
+}
 
 const initGitRepo = (async () => {
   if (!IS_WEB_CONTAINER) {
@@ -43,8 +55,10 @@ const initGitRepo = (async () => {
       // repository.path() returns the `/path/to/repo/.git`, we need the parent directory of it
       const gitRoot = path.join(repository.path(), '..')
       return { repository, gitRoot }
-    } catch (e) {
-      console.warn('[nextra] Init git repository failed', e)
+    } catch (error) {
+      console.warn(
+        `[nextra] Init git repository failed ${(error as Error).message}`
+      )
     }
   }
   return {}
@@ -81,7 +95,20 @@ async function loader(
     return 'export default () => null'
   }
 
-  const mdxPath = context.resourcePath as MdxPath
+  const mdxPath = (
+    context._module?.resourceResolveData
+      ? // to make it work with symlinks, resolve the mdx path based on the relative path
+        /*
+         * `context.rootContext` could include path chunk of
+         * `context._module.resourceResolveData.relativePath` use
+         * `context._module.resourceResolveData.descriptionFileRoot` instead
+         */
+        path.join(
+          context._module.resourceResolveData.descriptionFileRoot,
+          context._module.resourceResolveData.relativePath
+        )
+      : context.resourcePath
+  ) as MdxPath
 
   if (mdxPath.includes('/pages/api/')) {
     console.warn(
@@ -92,7 +119,7 @@ async function loader(
 
   const { items, fileMap } = IS_PRODUCTION
     ? pageMapCache.get()!
-    : await collectFiles(PAGES_DIR, locales)
+    : await collectFiles({ dir: PAGES_DIR, locales })
 
   // mdx is imported but is outside the `pages` directory
   if (!fileMap[mdxPath]) {
@@ -187,16 +214,14 @@ async function loader(
   const fallbackTitle =
     frontMatter.title || title || pageTitleFromFilename(fileMap[mdxPath].name)
 
-  if (searchIndexKey) {
-    if (frontMatter.searchable !== false) {
-      // Store all the things in buildInfo.
-      const { buildInfo } = context._module as any
-      buildInfo.nextraSearch = {
-        indexKey: searchIndexKey,
-        title: fallbackTitle,
-        data: structurizedData,
-        route: pageNextRoute
-      }
+  if (searchIndexKey && frontMatter.searchable !== false) {
+    // Store all the things in buildInfo.
+    const { buildInfo } = context._module as any
+    buildInfo.nextraSearch = {
+      indexKey: searchIndexKey,
+      title: fallbackTitle,
+      data: structurizedData,
+      route: pageNextRoute
     }
   }
 
@@ -213,18 +238,20 @@ async function loader(
   }
 
   // Relative path instead of a package name
-  const layout = isLocalTheme ? path.resolve(theme) : theme
+  const layout = isLocalTheme ? slash(path.resolve(theme)) : theme
 
-  let pageOpts: PageOpts = {
+  let pageOpts: Partial<PageOpts> = {
     filePath: slash(path.relative(CWD, mdxPath)),
     route,
-    frontMatter,
-    pageMap,
+    ...(Object.keys(frontMatter).length > 0 && { frontMatter }),
     headings,
     hasJsxInH1,
     timestamp,
-    flexsearch,
-    newNextLinkBehavior,
+    pageMap,
+    ...(!HAS_UNDERSCORE_APP_MDX_FILE && {
+      flexsearch,
+      newNextLinkBehavior // todo: remove in v3
+    }),
     readingTime,
     title: fallbackTitle
   }
@@ -233,9 +260,8 @@ async function loader(
     // some fields of `pageOpts`. One example is that the theme doesn't need
     // to access the full pageMap or frontMatter of other pages, and it's not
     // necessary to include them in the bundle.
-    pageOpts = transformPageOpts(pageOpts)
+    pageOpts = transformPageOpts(pageOpts as any)
   }
-
   const themeConfigImport = themeConfig
     ? `import __nextra_themeConfig from '${slash(path.resolve(themeConfig))}'`
     : ''
@@ -243,43 +269,66 @@ async function loader(
   const cssImport = OFFICIAL_THEMES.includes(theme)
     ? `import '${theme}/style.css'`
     : ''
-  const finalResult = transform
-    ? await transform(result, { route: pageNextRoute })
-    : result
-  const stringifiedPageOpts = JSON.stringify(pageOpts)
-
-  return `import { setupNextraPage } from 'nextra/setup-page'
-import __nextra_layout from '${layout}'
+  const finalResult = transform ? await transform(result, { route }) : result
+  const pageImports = `import __nextra_layout from '${layout}'
 ${themeConfigImport}
 ${katexCssImport}
-${cssImport}
+${cssImport}`
 
-${finalResult.replace(
-  'export default MDXContent;',
-  "export { default } from 'nextra/layout'"
-)}
+  if (pageNextRoute === '/_app') {
+    return `${pageImports}
+${finalResult}
 
-setupNextraPage({
-  Content: MDXContent,
-  nextraLayout: __nextra_layout,
-  hot: module.hot,
-  pageOpts: ${stringifiedPageOpts},
-  themeConfig: ${themeConfigImport ? '__nextra_themeConfig' : 'null'},
-  pageNextRoute: ${JSON.stringify(pageNextRoute)},
-  pageOptsChecksum: ${
-    IS_PRODUCTION
-      ? 'undefined'
-      : JSON.stringify(hashFnv32a(stringifiedPageOpts))
-  },
-  dynamicMetaModules: typeof window === 'undefined' ? [${dynamicMetaItems
+const __nextra_internal__ = globalThis[Symbol.for('__nextra_internal__')] ||= Object.create(null)
+__nextra_internal__.Layout = __nextra_layout
+__nextra_internal__.pageMap = ${JSON.stringify(pageOpts.pageMap)}
+__nextra_internal__.flexsearch = ${JSON.stringify(flexsearch)}
+${
+  themeConfigImport
+    ? '__nextra_internal__.themeConfig = __nextra_themeConfig'
+    : ''
+}`
+  }
+  if (HAS_UNDERSCORE_APP_MDX_FILE) {
+    delete pageOpts.pageMap
+  }
+
+  const stringifiedPageOpts = JSON.stringify(pageOpts)
+  const stringifiedChecksum = IS_PRODUCTION
+    ? "''"
+    : JSON.stringify(hashFnv32a(stringifiedPageOpts))
+
+  const dynamicMetaModules = dynamicMetaItems
     .map(
       descriptor =>
         `[import(${JSON.stringify(descriptor.metaFilePath)}), ${JSON.stringify(
           descriptor
         )}]`
     )
-    .join(',')}] : []
-})`
+    .join(',')
+
+  return `import { setupNextraPage } from 'nextra/setup-page'
+${HAS_UNDERSCORE_APP_MDX_FILE ? '' : pageImports}
+
+const __nextraPageOptions = {
+  MDXContent,
+  pageOpts: ${stringifiedPageOpts},
+  pageNextRoute: ${JSON.stringify(pageNextRoute)},
+  ${
+    HAS_UNDERSCORE_APP_MDX_FILE
+      ? ''
+      : 'nextraLayout: __nextra_layout,' +
+        (themeConfigImport && 'themeConfig: __nextra_themeConfig')
+  }
+}
+${finalResult.replace('export default MDXContent;', '')}
+if (process.env.NODE_ENV !== 'production') {
+  __nextraPageOptions.hot = module.hot
+  __nextraPageOptions.pageOptsChecksum = ${stringifiedChecksum}
+}
+if (typeof window === 'undefined') __nextraPageOptions.dynamicMetaModules = [${dynamicMetaModules}]
+
+export default setupNextraPage(__nextraPageOptions)`
 }
 
 export default function syncLoader(

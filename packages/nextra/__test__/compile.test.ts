@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises'
 import path from 'node:path'
+import { describe, expect, it } from 'vitest'
 import { compileMdx } from '../src/compile'
-import { it, describe, expect } from 'vitest'
 import { CWD } from '../src/constants'
 
 type Name =
@@ -46,6 +46,86 @@ describe('Process heading', () => {
     const data = await loadFixture('no-h1.mdx')
     const result = await compileMdx(data, { mdxOptions })
     expect(result).toMatchSnapshot()
+  })
+  it('use custom heading id', async () => {
+    const { result } = await compileMdx(
+      `
+# My Header [#test-id]
+## Some extra space [#extra-space]&nbsp;
+### Some extra space in heading    [#extra-space-in-heading]
+### nospace[#without-space]
+#### foo [#другой язык]
+##### bar Baz []
+###### bar Qux [#]`,
+      { mdxOptions }
+    )
+    expect(result).toMatch(`<_components.h1 id="test-id">{"My Header"}`)
+    expect(result).toMatch(
+      `<_components.h2 id="extra-space">{"Some extra space"}</_components.h2>`
+    )
+    expect(result).toMatch(
+      `<_components.h3 id="extra-space-in-heading">{"Some extra space in heading"}`
+    )
+    expect(result).toMatch(
+      `<_components.h3 id="without-space">{"nospace"}</_components.h3>`
+    )
+    expect(result).toMatch(`<_components.h4 id="другой язык">{"foo"}`)
+    expect(result).toMatch(`<_components.h5 id="bar-baz-">{"bar Baz []"}`)
+    expect(result).toMatch(`<_components.h6 id="bar-qux-">{"bar Qux [#]"}`)
+  })
+  it('use github-slugger', async () => {
+    const { result } = await compileMdx(`### My Header`, { mdxOptions })
+    expect(result).toMatch(`<_components.h3 id="my-header">{"My Header"}`)
+  })
+})
+
+describe('Link', () => {
+  it('supports .md links', async () => {
+    const { result } = await compileMdx(`[link](../file.md)`, { mdxOptions })
+    expect(result).toMatch(`<_components.a href="../file">`)
+  })
+
+  it('supports .mdx links', async () => {
+    const { result } = await compileMdx(`[link](../file.mdx)`, { mdxOptions })
+    expect(result).toMatch(`<_components.a href="../file">`)
+  })
+
+  it('supports URL links', async () => {
+    const { result } = await compileMdx(`[link](../file)`, { mdxOptions })
+    expect(result).toMatch(`<_components.a href="../file">`)
+  })
+
+  it('supports query', async () => {
+    const { result } = await compileMdx(`[link](../file.md?query=a)`, {
+      mdxOptions
+    })
+    expect(result).toMatch(`<_components.a href="../file?query=a">`)
+  })
+
+  it('supports anchor', async () => {
+    const { result } = await compileMdx(`[link](../file.md#anchor)`, {
+      mdxOptions
+    })
+    expect(result).toMatch(`<_components.a href="../file#anchor">`)
+  })
+
+  it('supports external .md links', async () => {
+    const { result } = await compileMdx(`[link](https://example.com/file.md)`, {
+      mdxOptions
+    })
+    expect(result).toMatch(`<_components.a href="https://example.com/file.md">`)
+  })
+
+  it('supports external .mdx links', async () => {
+    const { result } = await compileMdx(
+      `[link](https://example.com/file.mdx)`,
+      {
+        mdxOptions
+      }
+    )
+    expect(result).toMatch(
+      `<_components.a href="https://example.com/file.mdx">`
+    )
   })
 })
 

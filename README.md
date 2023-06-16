@@ -1,6 +1,7 @@
 # Nextra
 
-Simple, powerful and flexible site generation framework with everything you love from Next.js.
+Simple, powerful and flexible site generation framework with everything you love
+from Next.js.
 
 ## Documentation
 
@@ -12,7 +13,9 @@ https://nextra-docs-zeta.vercel.app/docs/guide/markdown
 
 ### Installation
 
-The Nextra repository uses [PNPM Workspaces](https://pnpm.io/workspaces) and [Turborepo](https://github.com/vercel/turborepo). To install dependencies, just simply run `pnpm` in the project root directory.
+The Nextra repository uses [PNPM Workspaces](https://pnpm.io/workspaces) and
+[Turborepo](https://github.com/vercel/turborepo). To install dependencies, run
+`pnpm install` in the project root directory.
 
 ### Build Nextra Core
 
@@ -38,7 +41,8 @@ pnpm build
 
 ### Development
 
-You can also debug them together with a website locally. For instance, to start examples/docs locally, run
+You can also debug them together with a website locally. For instance, to start
+examples/docs locally, run
 
 ```bash
 cd examples/docs
@@ -47,4 +51,5 @@ pnpm dev
 
 Any change to example/docs will be re-rendered instantly.
 
-If you update the core or theme packages, a rebuild is required. Or you can use the watch mode for both nextra and the theme in separated terminals.
+If you update the core or theme packages, a rebuild is required. Or you can use
+the watch mode for both nextra and the theme in separated terminals.

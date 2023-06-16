@@ -1,5 +1,8 @@
-import { findPagesDir, existsSync } from 'next/dist/lib/find-pages-dir.js'
+import * as findPagesDirImport from 'next/dist/lib/find-pages-dir.js'
 import { CWD } from './constants'
+import { getDefault } from './utils'
+
+const { findPagesDir, existsSync } = getDefault(findPagesDirImport)
 
 export { existsSync }
 
@@ -10,3 +13,7 @@ export function findPagesDirectory(): string {
     (res as any).pages // next v12
   )
 }
+
+export const PAGES_DIR = process.env.VITEST_WORKER_ID
+  ? ''
+  : findPagesDirectory()

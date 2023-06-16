@@ -7,11 +7,11 @@ export const ReleasesRenderer = () => {
   return <i>{releases}</i>
 }
 
-export const getStaticProps = ({ params }) => {
-  return ({ props: { ssg: 'Test SSG ' + Date.now() }, revalidate: 10 })
+export const getStaticProps = () => {
+  return { props: { ssg: 'Test SSG ' + Date.now() }, revalidate: 10 }
 }
 
-<ReleasesRenderer/>
+<ReleasesRenderer />
 
 This page should not have the sidebar because it has
 

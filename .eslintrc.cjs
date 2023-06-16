@@ -43,6 +43,7 @@ module.exports = {
         'no-negated-condition': 'off',
         'unicorn/no-negated-condition': 'error',
         'prefer-regex-literals': ['error', { disallowRedundantWrapping: true }],
+        'object-shorthand': ['error', 'always'],
         // todo: enable
         '@typescript-eslint/no-explicit-any': 'off',
         '@typescript-eslint/no-non-null-assertion': 'off',
@@ -107,7 +108,8 @@ module.exports = {
       },
       rules: {
         '@typescript-eslint/no-unnecessary-type-assertion': 'error',
-        '@typescript-eslint/consistent-type-imports': 'error'
+        '@typescript-eslint/consistent-type-imports': 'error',
+        '@typescript-eslint/non-nullable-type-assertion-style': 'error'
       }
     },
     // ⚙️ nextra-theme-docs
@@ -119,7 +121,7 @@ module.exports = {
         tailwindcss: {
           config: 'packages/nextra-theme-docs/tailwind.config.js',
           callees: ['cn'],
-          whitelist: ['nextra-breadcrumb', 'nextra-callout', 'nextra-bleed']
+          whitelist: ['nextra-breadcrumb', 'nextra-bleed']
         }
       },
       rules: {
@@ -151,6 +153,7 @@ module.exports = {
       settings: {
         tailwindcss: {
           config: 'packages/nextra-theme-docs/tailwind.config.js',
+          callees: ['cn'],
           whitelist: ['nextra-code-block']
         }
       }

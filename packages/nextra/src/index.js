@@ -1,13 +1,13 @@
 /* eslint-env node */
+import {
+  DEFAULT_CONFIG,
+  DEFAULT_LOCALE,
+  DEFAULT_LOCALES,
+  MARKDOWN_EXTENSION_REGEX,
+  MARKDOWN_EXTENSIONS
+} from './constants'
 import { NextraPlugin, pageMapCache } from './plugin'
 import { NextraSearchPlugin } from './search/plugin'
-import {
-  DEFAULT_LOCALE,
-  DEFAULT_CONFIG,
-  MARKDOWN_EXTENSION_REGEX,
-  MARKDOWN_EXTENSIONS,
-  DEFAULT_LOCALES
-} from './constants'
 
 const DEFAULT_EXTENSIONS = ['js', 'jsx', 'ts', 'tsx']
 
@@ -65,7 +65,7 @@ const nextra = (themeOrNextraConfig, themeConfig) =>
 
     return {
       ...nextConfig,
-      rewrites,
+      ...(nextConfig.output !== 'export' && { rewrites }),
       pageExtensions: [
         ...(nextConfig.pageExtensions || DEFAULT_EXTENSIONS),
         ...MARKDOWN_EXTENSIONS
@@ -76,7 +76,7 @@ const nextra = (themeOrNextraConfig, themeConfig) =>
           config.plugins.push(nextraPlugin)
 
           if (nextraConfig.flexsearch) {
-            const nextraSearchPlugin = new NextraSearchPlugin({})
+            const nextraSearchPlugin = new NextraSearchPlugin()
             config.plugins.push(nextraSearchPlugin)
           }
         }

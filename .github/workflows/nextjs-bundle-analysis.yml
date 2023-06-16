@@ -15,11 +15,16 @@ jobs:
   analyze:
     runs-on: ubuntu-latest
     steps:
+      - name: Cancel Previous Runs
+        uses: styfle/cancel-workflow-action@0.11.0
+        with:
+          access_token: ${{ github.token }}
+
       - uses: actions/checkout@v3
 
       - uses: pnpm/action-setup@v2.2.4
         with:
-          version: 7
+          version: 8
 
       - name: Install Node.js
         uses: actions/setup-node@v3
@@ -80,7 +85,9 @@ jobs:
       # entry in your package.json file.
       - name: Compare with Base Branch Bundle
         if: success() && github.event.number
-        run: ls -laR examples/swr-site/.next/analyze/base && cd examples/swr-site && npx -p nextjs-bundle-analysis compare
+        run:
+          ls -laR examples/swr-site/.next/analyze/base && cd examples/swr-site
+          && npx -p nextjs-bundle-analysis compare
 
       - name: Get Comment Body
         id: get-comment-body
@@ -98,17 +105,17 @@ jobs:
         id: fc
         with:
           issue-number: ${{ github.event.number }}
-          body-includes: '<!-- __NEXTJS_BUNDLE -->'
+          body-includes: <!-- __NEXTJS_BUNDLE
 
       - name: Create Comment
-        uses: peter-evans/create-or-update-comment@v2.1.0
+        uses: peter-evans/create-or-update-comment@v3.0.1
         if: success() && github.event.number && steps.fc.outputs.comment-id == 0
         with:
           issue-number: ${{ github.event.number }}
           body: ${{ steps.get-comment-body.outputs.body }}
 
       - name: Update Comment
-        uses: peter-evans/create-or-update-comment@v2.1.0
+        uses: peter-evans/create-or-update-comment@v3.0.1
         if: success() && github.event.number && steps.fc.outputs.comment-id != 0
         with:
           issue-number: ${{ github.event.number }}

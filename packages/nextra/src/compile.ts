@@ -1,28 +1,37 @@
-import path from 'node:path'
 import { createRequire } from 'node:module'
-import type { ProcessorOptions } from '@mdx-js/mdx';
+import path from 'node:path'
+import type { ProcessorOptions } from '@mdx-js/mdx'
 import { createProcessor } from '@mdx-js/mdx'
 import type { Processor } from '@mdx-js/mdx/lib/core'
-import remarkGfm from 'remark-gfm'
-import rehypePrettyCode from 'rehype-pretty-code'
-import remarkReadingTime from 'remark-reading-time'
+import { remarkMermaid } from '@theguild/remark-mermaid'
 import grayMatter from 'gray-matter'
-
-import {
-  remarkStaticImage,
-  remarkHeadings,
-  remarkReplaceImports,
-  structurize,
-  parseMeta,
-  attachMeta,
-  remarkRemoveImports
-} from './mdx-plugins'
-import type { LoaderOptions, PageOpts, ReadingTime } from './types'
-import theme from './theme.json'
-import { truthy } from './utils'
-import remarkMath from 'remark-math'
 import rehypeKatex from 'rehype-katex'
-import { CODE_BLOCK_FILENAME_REGEX, CWD, DEFAULT_LOCALE } from './constants'
+import type { Options as RehypePrettyCodeOptions } from 'rehype-pretty-code'
+import rehypePrettyCode from 'rehype-pretty-code'
+import remarkGfm from 'remark-gfm'
+import remarkMath from 'remark-math'
+import remarkReadingTime from 'remark-reading-time'
+import type { Pluggable } from 'unified'
+import {
+  CODE_BLOCK_FILENAME_REGEX,
+  CWD,
+  DEFAULT_LOCALE,
+  MARKDOWN_URL_EXTENSION_REGEX
+} from './constants'
+import {
+  attachMeta,
+  parseMeta,
+  remarkCustomHeadingId,
+  remarkHeadings,
+  remarkLinkRewrite,
+  remarkRemoveImports,
+  remarkReplaceImports,
+  remarkStaticImage,
+  structurize
+} from './mdx-plugins'
+import theme from './theme.json'
+import type { LoaderOptions, PageOpts, ReadingTime } from './types'
+import { truthy } from './utils'
 
 globalThis.__nextra_temp_do_not_use = () => {
   import('./__temp__')
@@ -30,7 +39,8 @@ globalThis.__nextra_temp_do_not_use = () => {
 
 const require = createRequire(import.meta.url)
 
-const DEFAULT_REHYPE_PRETTY_CODE_OPTIONS = {
+const DEFAULT_REHYPE_PRETTY_CODE_OPTIONS: RehypePrettyCodeOptions = {
+  // @ts-expect-error -- TODO: fix type error
   theme,
   onVisitLine(node: any) {
     // Prevent lines from collapsing in `display: grid` mode, and
@@ -50,12 +60,16 @@ const DEFAULT_REHYPE_PRETTY_CODE_OPTIONS = {
 }
 
 const cachedCompilerForFormat: Record<
-  Exclude<ProcessorOptions['format'], undefined>,
+  Exclude<ProcessorOptions['format'], undefined | null>,
   Processor
 > = Object.create(null)
 
 type MdxOptions = LoaderOptions['mdxOptions'] &
   Pick<ProcessorOptions, 'jsx' | 'outputFormat'>
+
+// @ts-expect-error -- Without bind is unable to use `remarkLinkRewrite` with `buildDynamicMDX`
+// because we already use `remarkLinkRewrite` function to remove .mdx? extensions
+const clonedRemarkLinkRewrite = remarkLinkRewrite.bind(null)
 
 export async function compileMdx(
   source: string,
@@ -97,8 +111,8 @@ export async function compileMdx(
     jsx = false,
     format: _format = 'mdx',
     outputFormat = 'function-body',
-    remarkPlugins = [],
-    rehypePlugins = [],
+    remarkPlugins,
+    rehypePlugins,
     rehypePrettyCodeOptions
   }: MdxOptions = {
     ...loaderOptions.mdxOptions,
@@ -129,21 +143,32 @@ export async function compileMdx(
       format,
       outputFormat,
       providerImportSource: isFileOutsideCWD
-        ? require.resolve('nextra').replace(/index\.js$/, 'mdx.mjs') // fixes Package subpath './mdx' is not defined by "exports"
+        ? require.resolve('nextra').replace(/index\.js$/, 'mdx.js') // fixes Package subpath './mdx' is not defined by "exports"
         : 'nextra/mdx',
       remarkPlugins: [
-        ...remarkPlugins,
+        ...(remarkPlugins || []),
+        remarkMermaid, // should be before remarkRemoveImports because contains `import { Mermaid } from ...`
         outputFormat === 'function-body' && remarkRemoveImports,
         remarkGfm,
+        remarkCustomHeadingId,
         remarkHeadings,
         staticImage && remarkStaticImage,
         searchIndexKey !== null && structurize(structurizedData, flexsearch),
         readingTime && remarkReadingTime,
         latex && remarkMath,
-        isFileOutsideCWD && remarkReplaceImports
+        isFileOutsideCWD && remarkReplaceImports,
+        // Remove the markdown file extension from links
+        [
+          clonedRemarkLinkRewrite,
+          {
+            pattern: MARKDOWN_URL_EXTENSION_REGEX,
+            replace: '',
+            excludeExternalLinks: true
+          }
+        ] satisfies Pluggable
       ].filter(truthy),
       rehypePlugins: [
-        ...rehypePlugins,
+        ...(rehypePlugins || []),
         [parseMeta, { defaultShowCopyCode }],
         codeHighlight !== false &&
           ([
