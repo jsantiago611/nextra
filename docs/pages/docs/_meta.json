@@ -8,12 +8,12 @@
   "docs-theme": "",
   "blog-theme": "",
   "custom-theme": "",
-  "-- More": {
+  "-- way More": {
     "type": "separator",
     "title": "way More"
   },
   "about-link": {
-    "title": "About Nextra",
+    "title": "About these notes",
     "href": "/about"
   },
   "next.js-link": {
