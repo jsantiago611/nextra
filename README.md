@@ -6,6 +6,8 @@ Simple, powerful and flexible site generation framework with everything you love
 
 [https://nextra.site](https://nextra.site)
 
+https://nextra-docs-zeta.vercel.app/docs/guide/markdown
+
 ## Development
 
 ### Installation
