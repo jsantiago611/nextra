@@ -1,5 +1,5 @@
 {
-  "index": "Introduction",
+  "index": "Hi",
   "guide": "",
   "-- Sermon Series": {
     "type": "separator",
@@ -8,9 +8,9 @@
   "docs-theme": "",
   "blog-theme": "",
   "custom-theme": "",
-  "-- way More": {
+  "-- More": {
     "type": "separator",
-    "title": "way More"
+    "title": "More"
   },
   "about-link": {
     "title": "About these notes",
